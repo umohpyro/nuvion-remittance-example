@@ -93,7 +93,7 @@ export async function loadBanks() {
     const hit = bankCache.get("NG");
     if (hit && Date.now() - hit.at < 86_400_000) return { banks: hit.banks };
     const rows = await nuvion<{ bank_name: string; bank_code?: string }[]>("GET", "/bank-codes/NG");
-    const banks = rows.filter((b) => b.bank_code).map((b) => ({ name: b.bank_name, code: b.bank_code as string }));
+    const banks = rows.filter((b) => /^d{3,6}$/.test(b.bank_code ?? "")).map((b) => ({ name: b.bank_name, code: b.bank_code as string }));
     bankCache.set("NG", { at: Date.now(), banks });
     return { banks };
   });
