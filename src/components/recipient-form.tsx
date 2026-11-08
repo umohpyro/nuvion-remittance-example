@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { addRecipient } from "@/app/actions";
+import { addRecipient, loadBanks, type Bank } from "@/app/actions";
 import { NativeSelect } from "@/components/native-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,14 @@ export function RecipientForm() {
   const [who, setWho] = useState(EMPTY);
   const [details, setDetails] = useState<Record<string, string>>({});
   const c = CORRIDORS[corridor];
+  const [banks, setBanks] = useState<Bank[] | null>(null);
+  const [banksError, setBanksError] = useState<string | null>(null);
+  const pickBank = corridor === "NG"; // Nigeria's directory is looked up; the visitor picks a bank instead of typing its code
+  const fields = pickBank ? c.fields.filter((f) => f.key !== "bank_name" && f.key !== "bank_code") : c.fields;
+  useEffect(() => {
+    if (!pickBank || banks) return;
+    void loadBanks().then((r) => (r.ok ? setBanks(r.banks) : setBanksError(r.error)));
+  }, [pickBank, banks]);
   const filled = c.fields.every((f) => details[f.key]?.trim());
   const error = filled ? checkDetails(corridor, details) : null;
   const ready = Object.values(who).every((v) => v.trim()) && filled && !error;
@@ -55,7 +63,17 @@ export function RecipientForm() {
           <Input id="rc-last" className="h-11" autoComplete="off" value={who.lastName} onChange={(e) => setWho({ ...who, lastName: e.target.value })} maxLength={40} required />
         </div>
       </div>
-      {c.fields.map((f) => (
+      {pickBank && (
+        <div className="space-y-1.5">
+          <Label htmlFor="rc-bank">Bank</Label>
+          <NativeSelect id="rc-bank" className="h-11" disabled={!banks} value={details.bank_code ?? ""} onChange={(e) => { const b = banks?.find((x) => x.code === e.target.value); setDetails({ ...details, bank_code: b?.code ?? "", bank_name: b?.name ?? "" }); }}>
+            <option value="">{banks ? "Choose a bank" : "Loading banks…"}</option>
+            {banks?.map((b) => <option key={b.code + b.name} value={b.code}>{b.name}</option>)}
+          </NativeSelect>
+          {banksError && <p className="text-sm text-destructive">{banksError}</p>}
+        </div>
+      )}
+      {fields.map((f) => (
         <div key={f.key} className="space-y-1.5">
           <Label htmlFor={`rc-${f.key}`}>{f.label}</Label>
           <Input id={`rc-${f.key}`} className="h-11" inputMode={f.inputMode} autoComplete="off" spellCheck={false} placeholder={f.placeholder} value={details[f.key] ?? ""} onChange={(e) => setDetails({ ...details, [f.key]: e.target.value })} aria-invalid={Boolean(error)} required />
