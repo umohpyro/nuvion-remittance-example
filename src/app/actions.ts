@@ -80,6 +80,25 @@ export async function addRecipient(input: z.input<typeof recipientSchema>) {
   });
 }
 
+/* ---------------- Bank directory ---------------- */
+
+export type Bank = { name: string; code: string };
+
+// shortcut: per-instance memory cache, a cold start refetches; move to a shared cache if that matters.
+const bankCache = new Map<string, { at: number; banks: Bank[] }>();
+
+/** Nigeria's bank directory (GET /bank-codes/NG), cached for a day because it is the same for every tenant. */
+export async function loadBanks() {
+  return guard(async () => {
+    const hit = bankCache.get("NG");
+    if (hit && Date.now() - hit.at < 86_400_000) return { banks: hit.banks };
+    const rows = await nuvion<{ bank_name: string; bank_code?: string }[]>("GET", "/bank-codes/NG");
+    const banks = rows.filter((b) => b.bank_code).map((b) => ({ name: b.bank_name, code: b.bank_code as string }));
+    bankCache.set("NG", { at: Date.now(), banks });
+    return { banks };
+  });
+}
+
 /* ---------------- Quote and send ---------------- */
 
 const quoteSchema = z.object({ recipientId: id, fromId: id, amount: z.string() });

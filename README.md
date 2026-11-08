@@ -21,7 +21,7 @@ Recipients can be in four corridors, each a rail from the [Send a Payout](https:
 |---|---|---|---|
 | Kenya | KES | M-Pesa mobile money (`momo-transfer`, scheme `mpesa`) | `phone_number` |
 | Ghana | GHS | MTN mobile money (`momo-transfer`, scheme `mtn`) | `phone_number` |
-| Nigeria | NGN | NIP bank transfer (`bank-transfer`) | `bank_name`, `bank_code`, `account_number` |
+| Nigeria | NGN | NIP bank transfer (`bank-transfer`) | `bank_name`, `bank_code` (picked from `GET /bank-codes/NG`), `account_number` |
 | United Kingdom | GBP | Faster Payments (`bank-transfer`) | `bank_name`, `sort_code`, `account_number` |
 
 ## Run it
