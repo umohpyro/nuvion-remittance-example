@@ -38,6 +38,7 @@ export function RecipientForm() {
         });
       }}
     >
+      <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">Use fake details only. Enter made-up names, phone numbers and account numbers, never real personal data.</p>
       <div className="space-y-1.5">
         <Label htmlFor="rc-corridor">Where are you sending to?</Label>
         <NativeSelect id="rc-corridor" className="h-11" value={corridor} onChange={(e) => { setCorridor(e.target.value as CorridorId); setDetails({}); }}>
