@@ -3,6 +3,8 @@
 A small app that sends money home across currencies with the [Nuvion](https://docs.nuvion.co) sandbox. You save a recipient, see a transparent quote (the exact amount they receive, the rate and when the quote expires) before anything leaves your account, send, and follow delivery on a status timeline. It has **no database**: Nuvion holds all state. It runs on Next.js 16, React 19, Tailwind CSS 4 and shadcn/ui, and is built for phones first.
 
 > Sandbox only. Nothing here is real and no money moves.
+>
+> Independent demo. Sandbox only, no real transfers. Not financial advice. Not affiliated with or endorsed by Safaricom, MTN or any payment scheme. Use fake details only. See [the privacy page](/privacy).
 
 ## What it shows
 
