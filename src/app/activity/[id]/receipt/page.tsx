@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Receipt" };
 
 export default function ReceiptPage({ params }: PageProps<"/activity/[id]/receipt">) {
   return (
-    <PageShell title="Receipt" intro="A record of this transfer, read from Nuvion. Print it or save it as a PDF.">
+    <PageShell eyebrow="Receipt" title="Receipt" intro="A record of this transfer, read from Nuvion. Print it or save it as a PDF.">
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
         <Receipt params={params} />
       </Suspense>
@@ -61,7 +61,7 @@ async function Receipt({ params }: { params: PageProps<"/activity/[id]/receipt">
       </section>
       <div className="flex flex-wrap items-center gap-4 print:hidden">
         <PrintButton />
-        <Link href={`/activity/${id}`} className="font-semibold text-pink-text underline underline-offset-4">Back to delivery</Link>
+        <Link href={`/activity/${id}`} className="font-semibold text-c-text underline underline-offset-4">Back to delivery</Link>
       </div>
     </div>
   );

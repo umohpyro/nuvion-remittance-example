@@ -11,6 +11,9 @@
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-pink-text: var(--pink-text);
+  --color-c: var(--c);
+  --color-c-text: var(--c-text);
+  --color-c-foreground: var(--c-foreground);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-band: var(--band);
@@ -64,6 +67,9 @@
   --ring: #f63080;
   --radius: 1rem;                 /* rounded-xl cards land at about 22px */
   --pink-text: #c41e68;           /* pink as text on light, AA */
+  --c: #e8590c;                   /* Remit coral, the category colour: hero band, active nav, route track, links */
+  --c-foreground: #ffffff;        /* bold or large text only on the coral fill */
+  --c-text: #b34109;              /* coral as text on light grounds, AA */
   --ok: #1f7a4a;                  /* successful status */
   --warn: #a8531c;                /* pending status; brown, not amber */
   --band: #300402;                /* dark frame: header, page title */
@@ -90,6 +96,9 @@
   --border: #4a2622;
   --input: #4a2622;
   --pink-text: #ff77ae;
+  --c: #f06a22;                   /* coral, a step lighter on the Earth ground */
+  --c-foreground: #170504;
+  --c-text: #ff9a62;
   --ok: #6fd69b;
   --warn: #ffb38a;
   --band: #0f0302;
@@ -106,4 +115,14 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Parcel marker on the delivery track: a soft ring that pulses while the money is on its way. */
+@keyframes remit-ping {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); }
+  100% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--c) 0%, transparent); }
+}
+.remit-ping { animation: remit-ping 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .remit-ping { animation: none; }
 }

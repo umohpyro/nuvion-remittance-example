@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Send money" };
 
 export default function SendPage({ searchParams }: PageProps<"/send">) {
   return (
-    <PageShell title="Send money" intro="Pick who gets it and how much you send. You see the exact amount they receive, the rate and how long it is locked before anything leaves your account.">
+    <PageShell eyebrow="New transfer" title="Send money" intro="Pick who gets it and how much you send. You see the exact amount they receive, the rate and how long it is locked before anything leaves your account.">
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
         <Form searchParams={searchParams} />
       </Suspense>
