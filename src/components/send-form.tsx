@@ -1,11 +1,11 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { getQuote, sendMoney } from "@/app/actions";
-import { Avatar, CorridorChip } from "@/components/person";
+import { Avatar } from "@/components/person";
 import { NativeSelect } from "@/components/native-select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -63,9 +63,10 @@ export function SendForm({ recipients, accounts, initial }: { recipients: Recipi
   if (!recipient) return null;
   if (!from) return <p className="text-sm text-muted-foreground">You need a fiat account that isn&apos;t in {to} to send from. Create one in your sandbox dashboard.</p>;
 
+  const firstName = recipient.name.split(" ")[0];
   return (
     <form
-      className="space-y-6"
+      className="grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start"
       onSubmit={(e) => {
         e.preventDefault();
         start(async () => {
@@ -82,69 +83,96 @@ export function SendForm({ recipients, accounts, initial }: { recipients: Recipi
         });
       }}
     >
-      <fieldset className="space-y-2">
-        <legend className="mb-1 text-sm font-semibold">Who are you sending to?</legend>
-        {recipients.map((r) => (
-          <label
-            key={r.id}
-            className="flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border bg-card p-3 has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/30 has-[:focus-visible]:ring-3"
-          >
-            <input type="radio" name="recipient" className="sr-only" value={r.id} checked={r.id === recipientId} onChange={() => { setRecipientId(r.id); reset(); }} />
-            <Avatar name={r.name} corridor={r.corridor} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">{r.name}</span>
-              <span className="block truncate text-sm text-muted-foreground">{r.summary}</span>
+      <div className="space-y-6">
+        <fieldset className="space-y-3">
+          <legend className="mb-1 text-[0.72rem] font-bold tracking-[0.12em] text-muted-foreground uppercase">Choose a route</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {recipients.map((r) => {
+              const c = CORRIDORS[r.corridor];
+              return (
+                <label
+                  key={r.id}
+                  className="flex cursor-pointer flex-col gap-3 rounded-2xl border bg-card p-3.5 transition-colors has-[:checked]:border-c has-[:checked]:bg-c/10 has-[:checked]:ring-2 has-[:checked]:ring-c/30 has-[:focus-visible]:ring-3"
+                >
+                  <input type="radio" name="recipient" className="sr-only" value={r.id} checked={r.id === recipientId} onChange={() => { setRecipientId(r.id); reset(); }} />
+                  <span className="flex items-center gap-3">
+                    <Avatar name={r.name} corridor={r.corridor} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{r.name}</span>
+                      <span className="block truncate text-sm text-muted-foreground">{r.summary}</span>
+                    </span>
+                  </span>
+                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 border-t pt-2.5 text-sm">
+                    <span className="font-extrabold tabular-nums">{from.currency}</span>
+                    <ArrowRight className="size-4 text-c-text" aria-hidden />
+                    <span className="font-extrabold tabular-nums">{c.currency}</span>
+                    <span className="min-w-0 text-muted-foreground">{c.country}, {c.rail}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="from">Pay from</Label>
+          <NativeSelect id="from" className="h-11" value={from.id} onChange={(e) => { setFromId(e.target.value); reset(); }}>
+            {usable.map((a) => <option key={a.id} value={a.id}>{a.name} · {formatAmount(a.availableMinor, a.currency)}</option>)}
+          </NativeSelect>
+        </div>
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
+        <section className="rounded-3xl bg-linear-to-br from-band from-55% to-c p-5 text-band-foreground" aria-label="Amount">
+          <div className="md:max-lg:grid md:max-lg:grid-cols-[1fr_auto_1fr] md:max-lg:items-center md:max-lg:gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="amount" className="text-xs font-bold tracking-[0.12em] text-sand-fixed uppercase">You send ({from.currency})</Label>
+              <input
+                id="amount"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="50.00"
+                value={amount}
+                onChange={(e) => { setAmount(e.target.value); reset(); }}
+                aria-invalid={Boolean(problem)}
+                className="h-16 w-full rounded-2xl border border-white/25 bg-black/25 px-4 text-3xl font-extrabold tracking-tight tabular-nums text-band-foreground outline-none placeholder:text-band-foreground/45 focus-visible:border-white/70 focus-visible:ring-3 focus-visible:ring-white/30 aria-invalid:border-destructive"
+              />
+              {problem && <p className="text-sm font-semibold text-sand-fixed">{problem}</p>}
+            </div>
+            <span className="mx-auto my-3 grid size-9 place-items-center rounded-full bg-white/15 md:max-lg:my-0" aria-hidden>
+              <ArrowRight className="size-5 rotate-90 md:max-lg:rotate-0" />
             </span>
-            <CorridorChip corridor={r.corridor} />
-          </label>
-        ))}
-      </fieldset>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="from">Pay from</Label>
-        <NativeSelect id="from" className="h-11" value={from.id} onChange={(e) => { setFromId(e.target.value); reset(); }}>
-          {usable.map((a) => <option key={a.id} value={a.id}>{a.name} · {formatAmount(a.availableMinor, a.currency)}</option>)}
-        </NativeSelect>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="amount">You send ({from.currency})</Label>
-        <input
-          id="amount"
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="50.00"
-          value={amount}
-          onChange={(e) => { setAmount(e.target.value); reset(); }}
-          aria-invalid={Boolean(problem)}
-          className="h-16 w-full rounded-2xl border border-input bg-card px-4 text-3xl font-extrabold tracking-tight tabular-nums outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive"
-        />
-        {problem && <p className="text-sm text-destructive">{problem}</p>}
-      </div>
-
-      {quote && (
-        <section className="rounded-3xl border bg-card p-5 shadow-card" aria-live="polite" aria-label="Your quote">
-          <p className="text-sm text-muted-foreground">{recipient.name} receives</p>
-          <p className="text-4xl font-extrabold tracking-tight tabular-nums">{formatAmount(quote.amountTo, quote.to)}</p>
-          <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t pt-4 text-sm">
-            <dt className="text-muted-foreground">You send</dt>
-            <dd className="text-right font-semibold tabular-nums">{formatAmount(quote.amountFrom, quote.from)}</dd>
-            <dt className="text-muted-foreground">Rate</dt>
-            <dd className="text-right font-semibold tabular-nums">1 {quote.from} = {formatRate(quote.rate)} {quote.to}</dd>
-            <dt className="text-muted-foreground">Fee</dt>
-            <dd className="text-right">Added on top of what you send. Nuvion can&apos;t price it before sending, so it shows on your receipt.</dd>
-            <dt className="text-muted-foreground">Quote</dt>
-            <dd className={`flex items-center justify-end gap-1.5 font-semibold tabular-nums ${expired ? "text-destructive" : ""}`}>
-              <Clock className="size-4" aria-hidden />
-              {expired ? "Expired" : `Locked for ${countdown(secondsLeft(quote.expiresAt, now))}`}
-            </dd>
-          </dl>
+            <div className="space-y-1.5" aria-live="polite">
+              <p className="text-xs font-bold tracking-[0.12em] text-sand-fixed uppercase">{firstName} receives ({to})</p>
+              <p className={`flex h-16 items-center rounded-2xl bg-black/25 px-4 text-3xl font-extrabold tracking-tight tabular-nums ${quote ? "" : "text-band-foreground/45"}`}>
+                {quote ? formatAmount(quote.amountTo, quote.to) : "—"}
+              </p>
+            </div>
+          </div>
         </section>
-      )}
 
-      <Button type="submit" size="lg" className="h-12 w-full rounded-full text-base font-bold" disabled={pending || !minor || Boolean(problem)}>
-        {pending ? "Working…" : quote && !expired ? `Send ${formatAmount(quote.amountFrom, quote.from)} to ${recipient.name.split(" ")[0]}` : quote ? "Quote expired. Get a new one" : "See what they'll get"}
-      </Button>
+        {quote && (
+          <section className="rounded-3xl border bg-card p-5 shadow-card" aria-live="polite" aria-label="Your quote">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <dt className="text-muted-foreground">You send</dt>
+              <dd className="text-right font-semibold tabular-nums">{formatAmount(quote.amountFrom, quote.from)}</dd>
+              <dt className="text-muted-foreground">Rate</dt>
+              <dd className="text-right font-semibold tabular-nums">1 {quote.from} = {formatRate(quote.rate)} {quote.to}</dd>
+              <dt className="text-muted-foreground">Fee</dt>
+              <dd className="text-right">Added on top of what you send. Nuvion can&apos;t price it before sending, so it shows on your receipt.</dd>
+              <dt className="text-muted-foreground">Quote</dt>
+              <dd className={`flex items-center justify-end gap-1.5 font-semibold tabular-nums ${expired ? "text-destructive" : ""}`}>
+                <Clock className="size-4" aria-hidden />
+                {expired ? "Expired" : `Locked for ${countdown(secondsLeft(quote.expiresAt, now))}`}
+              </dd>
+            </dl>
+          </section>
+        )}
+
+        <Button type="submit" size="lg" className="h-12 w-full rounded-full text-base font-bold" disabled={pending || !minor || Boolean(problem)}>
+          {pending ? "Working…" : quote && !expired ? `Send ${formatAmount(quote.amountFrom, quote.from)} to ${firstName}` : quote ? "Quote expired. Get a new one" : "See what they'll get"}
+        </Button>
+      </div>
     </form>
   );
 }
