@@ -32,3 +32,18 @@ test("the saved summary hides all but the last four digits", () => {
   assert.equal(summarise("KE", { phone_number: "+254700000001" }), "M-Pesa ••••0001");
   assert.ok(!summarise("GB", { bank_name: "Example Bank", sort_code: "040004", account_number: "12345678" }).includes("1234"));
 });
+
+test("Ghana bank transfers need a 6 or 8 digit bank code and digits for the account", () => {
+  const ok = { bank_name: "Example Bank", bank_code: "030100", account_number: "1234567890" };
+  assert.equal(checkDetails("GHB", ok), null);
+  assert.equal(checkDetails("GHB", { ...ok, bank_code: "0301" }), "Bank code must be 6 or 8 digits.");
+  assert.match(checkDetails("GHB", { ...ok, account_number: "12ab" }) ?? "", /digits only/);
+  assert.equal(paymentDetailFields("GHB", ok).country, "GH");
+});
+
+test("only corridors with a bank directory get a picker, and their code patterns skip stray entries", async () => {
+  const { BANK_PICKER } = await import("./corridors.ts");
+  assert.deepEqual(Object.keys(BANK_PICKER).sort(), ["GHB", "NG"]);
+  assert.equal(BANK_PICKER.NG?.code.test("ABSA"), false);
+  assert.equal(BANK_PICKER.GHB?.code.test("280100"), true);
+});

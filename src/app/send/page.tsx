@@ -8,17 +8,18 @@ import { listRecipients, loadSourceAccounts } from "@/lib/remit";
 
 export const metadata: Metadata = { title: "Send money" };
 
-export default function SendPage() {
+export default function SendPage({ searchParams }: PageProps<"/send">) {
   return (
     <PageShell title="Send money" intro="Pick who gets it and how much you send. You see the exact amount they receive, the rate and how long it is locked before anything leaves your account.">
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <Form />
+        <Form searchParams={searchParams} />
       </Suspense>
     </PageShell>
   );
 }
 
-async function Form() {
+async function Form({ searchParams }: { searchParams: PageProps<"/send">["searchParams"] }) {
+  const { to, amount } = await searchParams; // "Send again" on Recipients links here with ?to=<recipient id>&amount=<last amount>
   const [recipients, accounts] = await Promise.all([listRecipients(), loadSourceAccounts()]);
   if (recipients.length === 0) {
     return (
@@ -33,6 +34,7 @@ async function Form() {
     <>
       <SendForm
         recipients={recipients}
+        initial={{ recipientId: typeof to === "string" && recipients.some((r) => r.id === to) ? to : undefined, amount: typeof amount === "string" && /^\d{1,9}(\.\d{1,2})?$/.test(amount) ? amount : undefined }}
         accounts={accounts.map((a) => ({ id: a.id, name: a.display_name, currency: a.currency, availableMinor: a.balance.available }))}
       />
       <p className="mt-6 text-sm text-muted-foreground text-pretty">

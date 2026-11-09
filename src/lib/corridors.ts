@@ -1,7 +1,7 @@
 import { sortCode, ukAccountNumber } from "./bank.ts";
 
 /** The places this app can send money to. Each one is a payment rail the Nuvion docs list under "Supported corridors". */
-export type CorridorId = "KE" | "GH" | "NG" | "GB";
+export type CorridorId = "KE" | "GH" | "GHB" | "NG" | "GB";
 
 export interface Field {
   key: string;
@@ -46,6 +46,20 @@ export const CORRIDORS: Record<CorridorId, Corridor> = {
     fields: [{ key: "phone_number", label: "MTN MoMo number", placeholder: "+233240000001", inputMode: "tel" }],
     color: "#B8470A",
   },
+  GHB: {
+    id: "GHB",
+    country: "Ghana",
+    currency: "GHS",
+    rail: "Bank transfer (GH EFT)",
+    method: "bank-transfer",
+    fixed: { country: "GH" },
+    fields: [
+      { key: "bank_name", label: "Bank name", placeholder: "Example Bank" },
+      { key: "bank_code", label: "Bank code", placeholder: "030100", inputMode: "numeric" },
+      { key: "account_number", label: "Account number", placeholder: "0123456789", inputMode: "numeric" },
+    ],
+    color: "#8E3FA8",
+  },
   NG: {
     id: "NG",
     country: "Nigeria",
@@ -76,6 +90,16 @@ export const CORRIDORS: Record<CorridorId, Corridor> = {
   },
 };
 
+/**
+ * Corridors whose bank comes from Nuvion's directory (GET /bank-codes/{country}) instead of being typed. `code` is the
+ * shape of a usable bank_code; directory entries that don't match (Nigeria's list has a stray Ghanaian bank) are skipped.
+ * The UK has no directory in the sandbox, so it stays free text.
+ */
+export const BANK_PICKER: Partial<Record<CorridorId, { country: string; code: RegExp }>> = {
+  NG: { country: "NG", code: /^\d{3,6}$/ },
+  GHB: { country: "GH", code: /^(\d{6}|\d{8})$/ },
+};
+
 export const CORRIDOR_IDS = Object.keys(CORRIDORS) as CorridorId[];
 export const isCorridor = (v: string): v is CorridorId => v in CORRIDORS;
 
@@ -103,6 +127,10 @@ export function checkDetails(id: CorridorId, values: Record<string, string>): st
       if (!v.bank_name) return "Enter the bank's name.";
       if (!/^\d{3,6}$/.test(v.bank_code)) return "Bank code must be 3 to 6 digits.";
       return /^\d{10}$/.test(v.account_number) ? null : "Account number must be 10 digits.";
+    case "GHB":
+      if (!v.bank_name) return "Choose the bank.";
+      if (!/^(\d{6}|\d{8})$/.test(v.bank_code)) return "Bank code must be 6 or 8 digits.";
+      return /^\d{6,20}$/.test(v.account_number) ? null : "Enter the account number, digits only.";
     case "GB":
       if (!v.bank_name) return "Enter the bank's name.";
       if (!sortCode(v.sort_code)) return "Sort code must be 6 digits.";

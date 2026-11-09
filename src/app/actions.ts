@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getConfig } from "@/lib/config";
-import { CORRIDORS, CORRIDOR_IDS, checkDetails, type CorridorId } from "@/lib/corridors";
+import { BANK_PICKER, CORRIDORS, CORRIDOR_IDS, checkDetails, type CorridorId } from "@/lib/corridors";
 import { ConfigError } from "@/lib/env";
 import { UserError } from "@/lib/errors";
 import { formatAmount, parseAmount } from "@/lib/money";
@@ -87,14 +87,16 @@ export type Bank = { name: string; code: string };
 // shortcut: per-instance memory cache, a cold start refetches; move to a shared cache if that matters.
 const bankCache = new Map<string, { at: number; banks: Bank[] }>();
 
-/** Nigeria's bank directory (GET /bank-codes/NG), cached for a day because it is the same for every tenant. */
-export async function loadBanks() {
+/** A corridor's bank directory (GET /bank-codes/{country}), cached for a day because it is the same for every tenant. */
+export async function loadBanks(corridor: CorridorId) {
   return guard(async () => {
-    const hit = bankCache.get("NG");
+    const picker = BANK_PICKER[corridor];
+    if (!picker) throw new UserError("This corridor has no bank directory.");
+    const hit = bankCache.get(picker.country);
     if (hit && Date.now() - hit.at < 86_400_000) return { banks: hit.banks };
-    const rows = await nuvion<{ bank_name: string; bank_code?: string }[]>("GET", "/bank-codes/NG");
-    const banks = rows.filter((b) => /^\d{3,6}$/.test(b.bank_code ?? "")).map((b) => ({ name: b.bank_name, code: b.bank_code as string }));
-    bankCache.set("NG", { at: Date.now(), banks });
+    const rows = await nuvion<{ bank_name: string; bank_code?: string }[]>("GET", `/bank-codes/${picker.country}`);
+    const banks = rows.filter((b) => picker.code.test(b.bank_code ?? "")).map((b) => ({ name: b.bank_name, code: b.bank_code as string }));
+    bankCache.set(picker.country, { at: Date.now(), banks });
     return { banks };
   });
 }
