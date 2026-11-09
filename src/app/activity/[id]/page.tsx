@@ -8,11 +8,9 @@ import { Avatar, CorridorChip } from "@/components/person";
 import { StatusBadge } from "@/components/status-badge";
 import { TimelineView } from "@/components/timeline-view";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getConfig } from "@/lib/config";
 import { formatAmount, formatDate } from "@/lib/money";
-import { NuvionError, nuvion, type ApiTransfer, type FxQuote } from "@/lib/nuvion";
 import { debitedFor, formatRate } from "@/lib/quote";
-import { getRecipient } from "@/lib/remit";
+import { loadTransfer } from "@/lib/remit";
 import { isSettled } from "@/lib/timeline";
 
 export const metadata: Metadata = { title: "Transfer" };
@@ -30,21 +28,9 @@ export default function TransferPage({ params }: PageProps<"/activity/[id]">) {
 async function Transfer({ params }: { params: PageProps<"/activity/[id]">["params"] }) {
   const { id } = await params;
   if (!/^[0-9A-Z]{26}$/.test(id)) notFound();
-  const entity = (await getConfig()).entityId;
-
-  // Nuvion is the source of truth: the transfer, its quote and its recipient are read from the API on every visit.
-  let t: ApiTransfer;
-  try {
-    t = await nuvion<ApiTransfer>("GET", `/transfers/${id}?entity_id=${entity}`);
-  } catch (e) {
-    if (e instanceof NuvionError && e.httpStatus === 404) notFound();
-    throw e;
-  }
-  const quoteId = t.meta?.fx_quote_id;
-  const [quote, recipient] = await Promise.all([
-    quoteId ? nuvion<FxQuote>("GET", `/fx-quotes/${quoteId}?entity_id=${entity}`).catch(() => null) : null,
-    t.counterparty_id ? getRecipient(t.counterparty_id).catch(() => null) : null,
-  ]);
+  const view = await loadTransfer(id); // Nuvion is the source of truth: read on every visit
+  if (!view) notFound();
+  const { t, quote, recipient } = view;
   const { fee, total } = debitedFor(t.status, t.amount, t.applicable_fee);
 
   return (
@@ -89,7 +75,10 @@ async function Transfer({ params }: { params: PageProps<"/activity/[id]">["param
           <dt className="text-muted-foreground">Transfer ID</dt><dd className="text-right font-mono text-xs break-all">{t.id}</dd>
         </dl>
       </section>
-      <Link href="/activity" className="inline-block font-semibold text-pink-text underline underline-offset-4">Back to activity</Link>
+      <div className="flex flex-wrap gap-x-6 gap-y-2">
+        {isSettled(t.status) && <Link href={`/activity/${t.id}/receipt`} className="font-semibold text-pink-text underline underline-offset-4">View receipt</Link>}
+        <Link href="/activity" className="font-semibold text-pink-text underline underline-offset-4">Back to activity</Link>
+      </div>
     </div>
   );
 }

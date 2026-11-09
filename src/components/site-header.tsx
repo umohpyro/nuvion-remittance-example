@@ -15,7 +15,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const current = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   return (
-    <header className="sticky top-0 z-30 bg-band text-band-foreground">
+    <header className="print:hidden sticky top-0 z-30 bg-band text-band-foreground">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-4 px-4 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="grid size-8 place-items-center rounded-[10px] bg-primary text-sm font-extrabold text-primary-foreground" aria-hidden>R</span>

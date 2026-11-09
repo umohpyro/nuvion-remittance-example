@@ -35,17 +35,17 @@ interface Quote {
   expiresAt: number;
 }
 
-export function SendForm({ recipients, accounts }: { recipients: RecipientOption[]; accounts: AccountOption[] }) {
+export function SendForm({ recipients, accounts, initial }: { recipients: RecipientOption[]; accounts: AccountOption[]; initial?: { recipientId?: string; amount?: string } }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [recipientId, setRecipientId] = useState(recipients[0]?.id ?? "");
+  const [recipientId, setRecipientId] = useState(initial?.recipientId ?? recipients[0]?.id ?? "");
   const recipient = recipients.find((r) => r.id === recipientId);
   const to = recipient ? CORRIDORS[recipient.corridor].currency : "";
   // An account in the recipient's own currency can't fund a conversion, so it isn't offered.
   const usable = accounts.filter((a) => a.currency !== to);
   const [fromId, setFromId] = useState("");
   const from = usable.find((a) => a.id === fromId) ?? usable[0];
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(initial?.amount ?? "");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [now, setNow] = useState(() => Date.now());
 

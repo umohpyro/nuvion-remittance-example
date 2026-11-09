@@ -8,7 +8,7 @@ import { NativeSelect } from "@/components/native-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CORRIDORS, CORRIDOR_IDS, checkDetails, type CorridorId } from "@/lib/corridors";
+import { BANK_PICKER, CORRIDORS, CORRIDOR_IDS, checkDetails, type CorridorId } from "@/lib/corridors";
 
 const EMPTY = { firstName: "", lastName: "", street: "", city: "", postcode: "" };
 
@@ -19,14 +19,15 @@ export function RecipientForm() {
   const [who, setWho] = useState(EMPTY);
   const [details, setDetails] = useState<Record<string, string>>({});
   const c = CORRIDORS[corridor];
-  const [banks, setBanks] = useState<Bank[] | null>(null);
+  const [directory, setDirectory] = useState<Partial<Record<CorridorId, Bank[]>>>({});
   const [banksError, setBanksError] = useState<string | null>(null);
-  const pickBank = corridor === "NG"; // Nigeria's directory is looked up; the visitor picks a bank instead of typing its code
+  const pickBank = corridor in BANK_PICKER; // these corridors' banks come from Nuvion's directory: the visitor picks one instead of typing its code
+  const banks = directory[corridor] ?? null;
   const fields = pickBank ? c.fields.filter((f) => f.key !== "bank_name" && f.key !== "bank_code") : c.fields;
   useEffect(() => {
     if (!pickBank || banks) return;
-    void loadBanks().then((r) => (r.ok ? setBanks(r.banks) : setBanksError(r.error)));
-  }, [pickBank, banks]);
+    void loadBanks(corridor).then((r) => (r.ok ? setDirectory((d) => ({ ...d, [corridor]: r.banks })) : setBanksError(r.error)));
+  }, [pickBank, banks, corridor]);
   const filled = c.fields.every((f) => details[f.key]?.trim());
   const error = filled ? checkDetails(corridor, details) : null;
   const ready = Object.values(who).every((v) => v.trim()) && filled && !error;
@@ -70,7 +71,7 @@ export function RecipientForm() {
             <option value="">{banks ? "Choose a bank" : "Loading banks…"}</option>
             {banks?.map((b) => <option key={b.code + b.name} value={b.code}>{b.name}</option>)}
           </NativeSelect>
-          {banksError && <p className="text-sm text-destructive">{banksError}</p>}
+          {banksError && !banks && <p className="text-sm text-destructive">{banksError}</p>}
         </div>
       )}
       {fields.map((f) => (

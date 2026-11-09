@@ -2,7 +2,7 @@ import "server-only";
 import { CORRIDORS, isCorridor, paymentDetailFields, summarise, type CorridorId } from "@/lib/corridors";
 import { getConfig } from "@/lib/config";
 import { isStablecoin } from "@/lib/money";
-import { nuvion, type ApiAccount, type ApiTransfer, type Counterparty, type List, type PaymentDetail } from "@/lib/nuvion";
+import { NuvionError, nuvion, type ApiAccount, type ApiTransfer, type Counterparty, type FxQuote, type List, type PaymentDetail } from "@/lib/nuvion";
 
 /** The visitor's entity. Every Nuvion call acts for it. */
 const entityId = async () => (await getConfig()).entityId;
@@ -19,6 +19,24 @@ export async function loadSourceAccounts(): Promise<ApiAccount[]> {
 export async function loadTransfers(limit = 50): Promise<ApiTransfer[]> {
   const r = await nuvion<List<ApiTransfer>>("GET", `/transfers?entity_id=${await entityId()}&type=outflow&limit=${limit}`);
   return r.data.filter((t) => t.unique_reference.startsWith(REFERENCE_PREFIX));
+}
+
+/** A transfer with its quote and recipient, or null when Nuvion has no such transfer. Nuvion is the source of truth, so this reads all three on every call. */
+export async function loadTransfer(id: string) {
+  const entity = await entityId();
+  let t: ApiTransfer;
+  try {
+    t = await nuvion<ApiTransfer>("GET", `/transfers/${id}?entity_id=${entity}`);
+  } catch (e) {
+    if (e instanceof NuvionError && e.httpStatus === 404) return null;
+    throw e;
+  }
+  const quoteId = t.meta?.fx_quote_id;
+  const [quote, recipient] = await Promise.all([
+    quoteId ? nuvion<FxQuote>("GET", `/fx-quotes/${quoteId}?entity_id=${entity}`).catch(() => null) : null,
+    t.counterparty_id ? getRecipient(t.counterparty_id).catch(() => null) : null,
+  ]);
+  return { t, quote, recipient };
 }
 
 /* ---------------- Recipients: individual counterparties tagged in their `meta` ---------------- */

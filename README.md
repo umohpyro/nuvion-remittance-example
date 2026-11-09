@@ -11,8 +11,8 @@ A small app that sends money home across currencies with the [Nuvion](https://do
 | Page | What it demonstrates | Nuvion calls |
 |---|---|---|
 | Send `/send` | Pick a recipient and a source account, get a quote with a locked rate, confirm before it expires | `POST /fx-quotes`, `GET /fx-quotes/{id}`, `GET /counterparties/{id}/payment-details`, `POST /transfers` |
-| Recipients `/recipients` | A saved address book stored in Nuvion: an individual counterparty plus its payment details | `POST /counterparties`, `POST /payment-details`, `GET /counterparties`, `POST /counterparties/{id}/deactivate` |
-| Activity `/activity` | Your transfers, and a delivery page per transfer with a timeline and receipt | `GET /transfers`, `GET /transfers/{id}`, `GET /fx-quotes/{id}` |
+| Recipients `/recipients` | A saved address book, with a **Send again** button that opens Send with the recipient and their last amount filled in stored in Nuvion: an individual counterparty plus its payment details | `POST /counterparties`, `POST /payment-details`, `GET /counterparties`, `POST /counterparties/{id}/deactivate` |
+| Activity `/activity` | Your transfers, and a delivery page per transfer with a timeline, and a printable receipt (`/activity/{id}/receipt`) once it is delivered or failed | `GET /transfers`, `GET /transfers/{id}`, `GET /fx-quotes/{id}` |
 | Settings `/settings` | Bring your own key: look up your approved entities and connect one | `GET /entities`, `GET /accounts` |
 
 Recipients can be in four corridors, each a rail from the [Send a Payout](https://docs.nuvion.co/guides/send-a-payout) guide:
@@ -21,6 +21,7 @@ Recipients can be in four corridors, each a rail from the [Send a Payout](https:
 |---|---|---|---|
 | Kenya | KES | M-Pesa mobile money (`momo-transfer`, scheme `mpesa`) | `phone_number` |
 | Ghana | GHS | MTN mobile money (`momo-transfer`, scheme `mtn`) | `phone_number` |
+| Ghana | GHS | Bank transfer (GH EFT, `bank-transfer`) | `bank_name`, `bank_code` (picked from `GET /bank-codes/GH`), `account_number` |
 | Nigeria | NGN | NIP bank transfer (`bank-transfer`) | `bank_name`, `bank_code` (picked from `GET /bank-codes/NG`), `account_number` |
 | United Kingdom | GBP | Faster Payments (`bank-transfer`) | `bank_name`, `sort_code`, `account_number` |
 
@@ -74,7 +75,11 @@ npm run lint
 
 ## What the sandbox can and can't do
 
-The sandbox does not settle every payout. In testing, a GBP bank payout was created as `new` and then ended `failed` within seconds. Treat any corridor as able to end `failed` in the sandbox. The app shows that failure on the delivery page, and nothing is debited.
+The sandbox does not settle every payout. In testing, a Ghana bank payout in GHS settled, while GBP to Kenya M-Pesa payouts ended `failed` with `VALIDATION_ERROR` a few seconds after being created, for two different phone numbers and two amounts, and the transfer carries no further detail.
+
+The UK has no bank directory in the sandbox (`GET /bank-codes/GB` returns an empty list), so UK recipients type the bank name and sort code. Nigeria and Ghana banks are picked from the directory.
+
+A GBP bank payout was created as `new` and then ended `failed` within seconds. Treat any corridor as able to end `failed` in the sandbox. The app shows that failure on the delivery page, and nothing is debited.
 
 ## Security
 

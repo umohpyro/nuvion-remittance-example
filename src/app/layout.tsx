@@ -27,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
         </Suspense>
         <main className="flex-1">{children}</main>
-        <footer className="border-t px-4 py-8 text-center text-sm text-muted-foreground">
+        <footer className="print:hidden border-t px-4 py-8 text-center text-sm text-muted-foreground">
           <p className="mx-auto max-w-xl text-pretty">Independent demo. Sandbox only, no real transfers. Not financial advice. Not affiliated with or endorsed by Safaricom, MTN or any payment scheme.</p>
           <p className="mx-auto mt-2 max-w-xl text-pretty">Your API key is sealed in an encrypted cookie in this browser and expires after eight hours. <Link href="/privacy" className="underline underline-offset-4">Privacy</Link></p>
         </footer>
